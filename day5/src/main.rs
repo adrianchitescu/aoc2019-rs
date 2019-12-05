@@ -1,6 +1,5 @@
 use std::env;
 use std::fs;
-use crate::InstructionType::{Exit, Output};
 
 #[derive(PartialEq, Debug)]
 enum InstructionType {
@@ -8,13 +7,16 @@ enum InstructionType {
     Multiply,
     Input,
     Output,
+    JumpIfTrue,
+    JumpIfFalse,
+    LessThan,
+    Equals,
     Exit,
 }
 #[derive(Debug)]
-struct Instruction<'a> {
+struct Instruction {
     itype: InstructionType,
     operands : Vec<usize>,
-    program: &'a Vec<i32>
 }
 
 fn parse_input(input: &str) -> Vec<i32> {
@@ -47,15 +49,19 @@ fn get_positions(p:&Vec<i32>, ip: &mut usize, n: usize) -> Vec<usize> {
 
     o
 }
-fn get_instruction<'a>(p: &'a Vec<i32>, ip: &mut usize) -> Instruction<'a> {
+fn get_instruction(p: & Vec<i32>, ip: &mut usize) -> Instruction {
     use InstructionType::*;
     let operation = p[*ip];
-    let mut instr: Instruction = Instruction { itype: InstructionType::Add, operands: vec![], program : p };
+    let mut instr: Instruction = Instruction { itype: InstructionType::Add, operands: vec![]};
     match operation % 100 {
-        1 => { instr.itype = Add; instr.operands = get_positions(p, ip, 3);}
-        2 => { instr.itype = Multiply; instr.operands = get_positions(p, ip, 3);}
-        3 => { instr.itype = Input; instr.operands = get_positions(p, ip, 1);}
-        4 => { instr.itype = Output; instr.operands = get_positions(p, ip, 1);}
+        1 => { instr.itype = Add;           instr.operands = get_positions(p, ip, 3);}
+        2 => { instr.itype = Multiply;      instr.operands = get_positions(p, ip, 3);}
+        3 => { instr.itype = Input;         instr.operands = get_positions(p, ip, 1);}
+        4 => { instr.itype = Output;        instr.operands = get_positions(p, ip, 1);}
+        5 => { instr.itype = JumpIfTrue;    instr.operands = get_positions(p, ip, 2);}
+        6 => { instr.itype = JumpIfFalse;   instr.operands = get_positions(p, ip, 2);}
+        7 => { instr.itype = LessThan;      instr.operands = get_positions(p, ip, 3);}
+        8 => { instr.itype = Equals;        instr.operands = get_positions(p, ip, 3);}
         99 =>{ instr.itype = Exit;}
         _ => unreachable!()
     };
@@ -63,9 +69,11 @@ fn get_instruction<'a>(p: &'a Vec<i32>, ip: &mut usize) -> Instruction<'a> {
     instr
 }
 
-fn part1(v: &Vec<i32>) -> i32 {
+fn run(v: &Vec<i32>, input: i32) -> i32 {
+    use InstructionType::*;
     let mut pos = 0;
     let mut vec = v.to_vec();
+    let mut output: i32 = 0;
     loop {
         let instr = get_instruction(&vec, &mut pos);
 
@@ -73,32 +81,54 @@ fn part1(v: &Vec<i32>) -> i32 {
             break;
         }
         if instr.itype == Output {
+            output = vec[instr.operands[0]];
             continue;
         }
 
         let dest: usize;
-        let result = match instr.itype {
-            InstructionType::Add=> {
+        match instr.itype {
+            Add => {
                 dest = instr.operands[2];
-                vec[instr.operands[0]] + vec[instr.operands[1]]
+                vec[dest] = vec[instr.operands[0]] + vec[instr.operands[1]];
             }
-            InstructionType::Multiply=> {
+            Multiply => {
                 dest = instr.operands[2];
-                vec[instr.operands[0]] * vec[instr.operands[1]]
+                vec[dest] = vec[instr.operands[0]] * vec[instr.operands[1]];
             }
-            InstructionType::Input=> {
+            Input => {
                 dest = instr.operands[0];
-                1
+                vec[dest] = input;
+            }
+            JumpIfTrue  => {
+                if vec[instr.operands[0]] != 0 {
+                    pos = vec[instr.operands[1]] as usize;
+                }
+            }
+            JumpIfFalse => {
+                if vec[instr.operands[0]] == 0 {
+                    pos = vec[instr.operands[1]] as usize;
+                }
+            }
+            LessThan => {
+                if vec[instr.operands[0]] < vec[instr.operands[1]] {
+                    vec[instr.operands[2]] = 1;
+                } else {
+                    vec[instr.operands[2]] = 0;
+                }
+            }
+            Equals => {
+                if vec[instr.operands[0]] == vec[instr.operands[1]] {
+                    vec[instr.operands[2]] = 1;
+                } else {
+                    vec[instr.operands[2]] = 0;
+                }
             }
 
             _ => unreachable!()
         };
-
-        vec[dest] = result;
-        println!("[{}] = {}",dest, result);
     }
 
-    vec[0]
+    output
 }
 fn main() {
     let args: Vec<String> = env::args().collect();
@@ -111,6 +141,8 @@ fn main() {
             std::process::exit(1);
         });
 
-    let vec = parse_input(&file_contents);
-    part1(&vec);
+    let vec1 = parse_input(&file_contents);
+    let vec2 = vec1.clone();
+    println!("Part1 answer: {}", run(&vec1, 1));
+    println!("Part2 answer: {}", run(&vec2, 5));
 }
