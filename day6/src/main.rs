@@ -133,6 +133,6 @@ mod tests {
              K)YOU\n\
              I)SAN",
         );
-        assert_eq!(count_tranfers(&orbits, "YOU", "SAN"), 5);
+        assert_eq!(count_tranfers(&orbits, "YOU", "SAN"), 4);
     }
 }
