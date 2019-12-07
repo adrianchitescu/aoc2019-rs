@@ -2,6 +2,7 @@ use std::env;
 use std::fs;
 
 extern crate int_computer;
+use int_computer::computer::*;
 
 fn parse_input(input: &str) -> Vec<i32> {
     let mut vec = Vec::new();
@@ -15,10 +16,6 @@ fn parse_input(input: &str) -> Vec<i32> {
     }
     vec
 }
-fn get_positions(p: &Vec<i32>, ip: &mut usize, n: usize) -> Vec<usize> {
-    let mut o = vec![0; n];
-    let mut op = p[*ip as usize] / 100;
-    let mut i = 0;
 
 fn main() {
     let args: Vec<String> = env::args().collect();

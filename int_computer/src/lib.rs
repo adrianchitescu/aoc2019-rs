@@ -1,5 +1,3 @@
-
-
 pub mod computer {
     use std::collections::VecDeque;
 
@@ -54,9 +52,11 @@ pub mod computer {
         pub fn get_output(&mut self) -> Option<i32> {
             self.output.pop_front()
         }
+
         pub fn get_exit_value(&mut self) -> Option<i32> {
             self.output.pop_back()
         }
+
         fn next_instruction(&mut self) -> Instruction {
             use InstructionType::*;
             let instr = std::mem::replace(&mut self.last_instr, None);
@@ -110,6 +110,7 @@ pub mod computer {
 
             instr
         }
+
         pub fn run(&mut self) -> State {
             use InstructionType::*;
             let state: State;

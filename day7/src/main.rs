@@ -49,7 +49,8 @@ fn run_amplifiers(phase_seq: &Vec<i32>, program: &Vec<i32>) -> i32 {
 }
 
 fn get_max_signal(program: &Vec<i32>, phase: &[i32]) -> i32 {
-    if let Some(max_signal) = phase.to_vec()
+    if let Some(max_signal) = phase
+        .to_vec()
         .permutation()
         .into_iter()
         .map(|p| run_amplifiers(&p, &program.clone()))
