@@ -2,7 +2,25 @@ use std::env;
 use std::fs;
 use itertools::Itertools;
 
-fn parse_input(input: &str) -> Vec<Vec<u32>> {
+#[derive(Eq, PartialEq, Clone, Copy)]
+enum Color {
+    Black,
+    White,
+    Transparent
+}
+
+impl From<u8> for Color {
+    fn from(item: u8) -> Self {
+        match item {
+            0 => Color::Black,
+            1 => Color::White,
+            2 => Color::Transparent,
+            _ => unreachable!()
+        }
+    }
+}
+
+fn parse_input(input: &str) -> Vec<Vec<Color>> {
     input.chars()
         .into_iter()
         .chunks(25*6)
@@ -10,17 +28,17 @@ fn parse_input(input: &str) -> Vec<Vec<u32>> {
         .map(|layer|
             layer
                 .into_iter()
-                .map(|pixel| pixel.to_digit(10).unwrap())
+                .map(|pixel| Color::from(pixel.to_digit(10).unwrap() as u8))
                 .collect()
         )
         .collect()
 }
-fn check_image(img: &Vec<Vec<u32>>) -> u32 {
+fn check_image(img: &Vec<Vec<Color>>) -> u32 {
     let min_layer = img
         .into_iter()
         .enumerate()
         .map(|(index, layer)| {
-            let c = layer.into_iter().filter(|x| *x == &0).count();
+            let c = layer.into_iter().filter(|x| **x == Color::Black).count();
             (index, c)
         })
         .min_by(|x, y| x.1.cmp(&y.1))
@@ -28,25 +46,30 @@ fn check_image(img: &Vec<Vec<u32>>) -> u32 {
 
     let ones = img[min_layer.0].clone()
         .into_iter()
-        .filter(|x| *x == 1)
+        .filter(|x| *x == Color::White)
         .count();
     let twos = img[min_layer.0].clone()
         .into_iter()
-        .filter(|x| *x == 2)
+        .filter(|x| *x == Color::Transparent)
         .count();
 
     (ones * twos) as u32
 }
-fn extract_pixels(img: &Vec<Vec<u32>>, pos: usize) -> Vec<&u32> {
+fn extract_pixels(img: &Vec<Vec<Color>>, pos: usize) -> Vec<&Color> {
     img
         .into_iter()
         .map(|layer| &layer[pos])
         .collect()
 }
-fn print_layer(layer: &Vec<u32>, width: usize) -> (){
+
+fn print_layer(layer: &Vec<Color>, width: usize) -> (){
     let mut i = 0;
     for p in layer {
-        print!("{}", p);
+        if *p == Color::White {
+            print!("XX");
+        } else {
+            print!("  ");
+        }
         i += 1;
         if i % width == 0 {
             println!();
@@ -54,18 +77,19 @@ fn print_layer(layer: &Vec<u32>, width: usize) -> (){
     }
 }
 
-fn decode(img: &Vec<Vec<u32>>) {
-    let new_img: Vec<u32> = (0..(25*6))
+fn decode(img: &Vec<Vec<Color>>) {
+    let new_img: Vec<Color> = (0..(25*6))
         .map(|x|extract_pixels(&img, x))
-        .map(|pixels : Vec<&u32>| {
-            let mut winning_pixel: u32 = 2;
-            for p in pixels {
-                if *p < 2 {
-                    winning_pixel = *p;
-                    break;
-                }
+        .map(|pixels : Vec<&Color>| {
+            if let Some(&pixel) = pixels
+                .into_iter()
+                .skip_while(|&x| *x == Color::Transparent)
+                .next()
+            {
+                pixel
+            } else {
+                Color::Transparent
             }
-            winning_pixel
         })
         .collect();
 
@@ -80,6 +104,7 @@ fn main() {
         eprintln!("Cannot read from file {}", input_filename);
         std::process::exit(1);
     });
+
     let layers = parse_input(&file_contents);
 
     println!("Min layer {}", check_image(&layers));
