@@ -24,17 +24,16 @@ pub mod computer {
     #[derive(Debug, Clone)]
     pub struct Instruction {
         itype: InstructionType,
-        operands: Vec<usize>,
+        operands: Vec<i128>,
     }
 
     pub struct Computer {
-        program: Vec<i128>,
-        memory: HashMap<usize, i128>,
+        memory: HashMap<i128, i128>,
         output: VecDeque<i128>,
         input: VecDeque<i32>,
-        instruction_pointer: usize,
+        instruction_pointer: i128,
         last_instr: Option<Instruction>,
-        relative_base: i32,
+        relative_base: i128,
     }
 
     pub fn read_instructions(input: &str) -> Vec<i128> {
@@ -53,8 +52,7 @@ pub mod computer {
 
     impl Computer {
         pub fn new(p: &Vec<i128>) -> Computer {
-            let c = Computer {
-                program: p.clone(),
+            let mut c = Computer {
                 memory: HashMap::new(),
                 output: VecDeque::new(),
                 input: VecDeque::new(),
@@ -62,9 +60,24 @@ pub mod computer {
                 last_instr: None,
                 relative_base: 0,
             };
+
+            for (index, v) in p.into_iter().enumerate() {
+                c.memory.insert(index as i128, *v);
+            }
+
             c
         }
 
+        fn memwrite(&mut self, pos: i128, value: i128) {
+            self.memory.insert(pos, value);
+        }
+
+        fn memread(&self, pos: i128) -> i128 {
+            match self.memory.get(&pos) {
+                Some(v) => *v,
+                None => unreachable!(),
+            }
+        }
         pub fn add_input(&mut self, v: i32) {
             self.input.push_back(v);
         }
@@ -77,21 +90,19 @@ pub mod computer {
             self.output.pop_back()
         }
 
-        pub fn get_positions(&mut self, n: usize) -> Vec<usize> {
+        pub fn get_positions(&mut self, n: usize) -> Vec<i128> {
             let mut o = vec![0; n];
-            let op_code: i128 = &self.program[self.instruction_pointer] / 100;
-            let mut op = op_code;
+            let mut op = self.memread(self.instruction_pointer) / 100;
             let mut i = 0;
             self.instruction_pointer += 1;
             while i < n {
                 match op % 10 {
-                    0 => o[i] = self.program[self.instruction_pointer] as usize,
+                    0 => o[i] = self.memread(self.instruction_pointer),
                     1 => {
-                        o[i] = self.instruction_pointer as usize;
+                        o[i] = self.instruction_pointer;
                     }
                     2 => {
-                        o[i] = self.relative_base as usize
-                            + (self.program[self.instruction_pointer] as usize);
+                        o[i] = self.relative_base + (self.memread(self.instruction_pointer));
                     }
                     _ => unreachable!(),
                 };
@@ -110,7 +121,7 @@ pub mod computer {
                 return i;
             }
 
-            let operation = self.program[self.instruction_pointer] as usize;
+            let operation = self.memread(self.instruction_pointer) as usize;
             let mut instr: Instruction = Instruction {
                 itype: InstructionType::Add,
                 operands: vec![],
@@ -165,38 +176,32 @@ pub mod computer {
             use InstructionType::*;
             let state: State;
             loop {
-                if self.instruction_pointer >= self.program.len() {
-                    state = State::Done;
-                    break;
-                }
                 let instr = self.next_instruction();
-
                 if instr.itype == Exit {
                     state = State::Done;
                     break;
                 }
                 if instr.itype == Output {
-                    self.output
-                        .push_back(self.program[instr.operands[0]].clone());
+                    self.output.push_back(self.memread(instr.operands[0]));
                     continue;
                 }
 
-                let dest: usize;
                 match instr.itype {
                     Add => {
-                        dest = instr.operands[2];
-                        self.program[dest] =
-                            &self.program[instr.operands[0]] + &self.program[instr.operands[1]];
+                        self.memwrite(
+                            instr.operands[2],
+                            self.memread(instr.operands[0]) + self.memread(instr.operands[1]),
+                        );
                     }
                     Multiply => {
-                        dest = instr.operands[2];
-                        self.program[dest] =
-                            &self.program[instr.operands[0]] * &self.program[instr.operands[1]];
+                        self.memwrite(
+                            instr.operands[2],
+                            self.memread(instr.operands[0]) * self.memread(instr.operands[1]),
+                        );
                     }
                     Input => {
-                        dest = instr.operands[0];
                         if let Some(i) = self.input.pop_front() {
-                            self.program[dest] = i as i128;
+                            self.memwrite(instr.operands[0], i as i128);
                         } else {
                             self.last_instr = Some(instr);
                             state = State::WaitingInput;
@@ -204,31 +209,31 @@ pub mod computer {
                         }
                     }
                     JumpIfTrue => {
-                        if self.program[instr.operands[0]] != 0 {
-                            self.instruction_pointer = self.program[instr.operands[1]] as usize;
+                        if self.memread(instr.operands[0]) != 0 {
+                            self.instruction_pointer = self.memread(instr.operands[1]);
                         }
                     }
                     JumpIfFalse => {
-                        if self.program[instr.operands[0]] == 0 {
-                            self.instruction_pointer = self.program[instr.operands[1]] as usize;
+                        if self.memread(instr.operands[0]) == 0 {
+                            self.instruction_pointer = self.memread(instr.operands[1]);
                         }
                     }
                     LessThan => {
-                        if self.program[instr.operands[0]] < self.program[instr.operands[1]] {
-                            self.program[instr.operands[2]] = 1;
+                        if self.memread(instr.operands[0]) < self.memread(instr.operands[1]) {
+                            self.memwrite(instr.operands[2], 1);
                         } else {
-                            self.program[instr.operands[2]] = 0;
+                            self.memwrite(instr.operands[2], 0);
                         }
                     }
                     Equals => {
-                        if self.program[instr.operands[0]] == self.program[instr.operands[1]] {
-                            self.program[instr.operands[2]] = 1;
+                        if self.memread(instr.operands[0]) == self.memread(instr.operands[1]) {
+                            self.memwrite(instr.operands[2], 1);
                         } else {
-                            self.program[instr.operands[2]] = 0;
+                            self.memwrite(instr.operands[2], 0);
                         }
                     }
                     AdjustBase => {
-                        self.relative_base += self.program[instr.operands[0]] as i32;
+                        self.relative_base += self.memread(instr.operands[0]);
                     }
                     _ => unreachable!(),
                 };
