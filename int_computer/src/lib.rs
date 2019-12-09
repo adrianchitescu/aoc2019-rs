@@ -1,5 +1,10 @@
+pub use num_bigint::BigInt;
 pub mod computer {
-    use std::collections::VecDeque;
+    use std::collections::{VecDeque, HashMap};
+    use num_bigint::BigInt;
+    use num_traits::cast::ToPrimitive;
+    use num_traits::Zero;
+
 
     #[derive(PartialEq, Debug, Clone)]
     pub enum InstructionType {
@@ -11,6 +16,7 @@ pub mod computer {
         JumpIfFalse,
         LessThan,
         Equals,
+        AdjustBase,
         Exit,
     }
 
@@ -27,36 +33,77 @@ pub mod computer {
     }
 
     pub struct Computer {
-        program: Vec<i32>,
-        output: VecDeque<i32>,
+        program: Vec<BigInt>,
+        memory: HashMap<usize, BigInt>,
+        output: VecDeque<BigInt>,
         input: VecDeque<i32>,
         instruction_pointer: usize,
         last_instr: Option<Instruction>,
+        relative_base: i32
     }
 
-    impl Computer {
-        pub fn new(p: &Vec<i32>) -> Computer {
-            Computer {
+    pub fn read_instructions(input: &str) -> Vec<BigInt> {
+        let mut vec = Vec::new();
+        for n in input.split_terminator(',') {
+            if let Ok(f) = n.parse::<BigInt>() {
+                vec.push(f);
+            } else {
+                eprintln!("{}", n);
+                eprintln!("invalid value in the provided input");
+                break;
+            }
+        }
+        vec
+    }
+
+    impl  Computer {
+        pub fn new(p: &Vec<BigInt>) -> Computer {
+            let c = Computer {
                 program: p.clone(),
+                memory : HashMap::new(),
                 output: VecDeque::new(),
                 input: VecDeque::new(),
                 instruction_pointer: 0,
                 last_instr: None,
-            }
+                relative_base : 0
+            };
+            c
         }
 
         pub fn add_input(&mut self, v: i32) {
             self.input.push_back(v);
         }
 
-        pub fn get_output(&mut self) -> Option<i32> {
+        pub fn get_output(&mut self) -> Option<BigInt> {
             self.output.pop_front()
         }
 
-        pub fn get_exit_value(&mut self) -> Option<i32> {
+        pub fn get_exit_value(&mut self) -> Option<BigInt> {
             self.output.pop_back()
         }
 
+        pub fn get_positions(&mut self, n: usize) -> Vec<usize> {
+            let mut o = vec![0; n];
+            let op_code:BigInt = &self.program[self.instruction_pointer] / 100;
+
+            let mut op = op_code.to_usize().unwrap();
+            let mut i = 0;
+            self.instruction_pointer += 1;
+            while i < n {
+                match op % 10 {
+                    0 => { o[i] = self.program[self.instruction_pointer].to_usize().unwrap()}
+                    1 => { o[i] = self.instruction_pointer; }
+                    2 => { o[i] = (self.relative_base + &self.program[self.instruction_pointer]).to_usize().unwrap();}
+                    _ => unreachable!()
+                };
+
+                self.instruction_pointer += 1;
+                i += 1;
+                op /= 10;
+            }
+
+            o
+        }
         fn next_instruction(&mut self) -> Instruction {
             use InstructionType::*;
             let instr = std::mem::replace(&mut self.last_instr, None);
@@ -64,7 +111,7 @@ pub mod computer {
                 return i;
             }
 
-            let operation = self.program[self.instruction_pointer];
+            let operation = self.program[self.instruction_pointer].to_usize().unwrap();
             let mut instr: Instruction = Instruction {
                 itype: InstructionType::Add,
                 operands: vec![],
@@ -72,35 +119,39 @@ pub mod computer {
             match operation % 100 {
                 1 => {
                     instr.itype = Add;
-                    instr.operands = get_positions(&self.program, &mut self.instruction_pointer, 3);
+                    instr.operands = self.get_positions(3);
                 }
                 2 => {
                     instr.itype = Multiply;
-                    instr.operands = get_positions(&self.program, &mut self.instruction_pointer, 3);
+                    instr.operands = self.get_positions(3);
                 }
                 3 => {
                     instr.itype = Input;
-                    instr.operands = get_positions(&self.program, &mut self.instruction_pointer, 1);
+                    instr.operands = self.get_positions(1);
                 }
                 4 => {
                     instr.itype = Output;
-                    instr.operands = get_positions(&self.program, &mut self.instruction_pointer, 1);
+                    instr.operands = self.get_positions(1);
                 }
                 5 => {
                     instr.itype = JumpIfTrue;
-                    instr.operands = get_positions(&self.program, &mut self.instruction_pointer, 2);
+                    instr.operands = self.get_positions(2);
                 }
                 6 => {
                     instr.itype = JumpIfFalse;
-                    instr.operands = get_positions(&self.program, &mut self.instruction_pointer, 2);
+                    instr.operands = self.get_positions(2);
                 }
                 7 => {
                     instr.itype = LessThan;
-                    instr.operands = get_positions(&self.program, &mut self.instruction_pointer, 3);
+                    instr.operands = self.get_positions(3);
                 }
                 8 => {
                     instr.itype = Equals;
-                    instr.operands = get_positions(&self.program, &mut self.instruction_pointer, 3);
+                    instr.operands = self.get_positions(3);
+                }
+                9 => {
+                    instr.itype = AdjustBase;
+                    instr.operands = self.get_positions(1);
                 }
                 99 => {
                     instr.itype = Exit;
@@ -126,7 +177,7 @@ pub mod computer {
                     break;
                 }
                 if instr.itype == Output {
-                    self.output.push_back(self.program[instr.operands[0]]);
+                    self.output.push_back(self.program[instr.operands[0]].clone());
                     continue;
                 }
 
@@ -135,17 +186,17 @@ pub mod computer {
                     Add => {
                         dest = instr.operands[2];
                         self.program[dest] =
-                            self.program[instr.operands[0]] + self.program[instr.operands[1]];
+                            &self.program[instr.operands[0]] + &self.program[instr.operands[1]];
                     }
                     Multiply => {
                         dest = instr.operands[2];
                         self.program[dest] =
-                            self.program[instr.operands[0]] * self.program[instr.operands[1]];
+                            &self.program[instr.operands[0]] * &self.program[instr.operands[1]];
                     }
                     Input => {
                         dest = instr.operands[0];
                         if let Some(i) = self.input.pop_front() {
-                            self.program[dest] = i;
+                            self.program[dest] = BigInt::from(i);
                         } else {
                             self.last_instr = Some(instr);
                             state = State::WaitingInput;
@@ -153,54 +204,37 @@ pub mod computer {
                         }
                     }
                     JumpIfTrue => {
-                        if self.program[instr.operands[0]] != 0 {
-                            self.instruction_pointer = self.program[instr.operands[1]] as usize;
+                        if !self.program[instr.operands[0]].is_zero() {
+                            self.instruction_pointer = self.program[instr.operands[1]].to_usize().unwrap();
                         }
                     }
                     JumpIfFalse => {
-                        if self.program[instr.operands[0]] == 0 {
-                            self.instruction_pointer = self.program[instr.operands[1]] as usize;
+                        if self.program[instr.operands[0]].is_zero() {
+                            self.instruction_pointer = self.program[instr.operands[1]].to_usize().unwrap();
                         }
                     }
                     LessThan => {
                         if self.program[instr.operands[0]] < self.program[instr.operands[1]] {
-                            self.program[instr.operands[2]] = 1;
+                            self.program[instr.operands[2]] = BigInt::from(1);
                         } else {
-                            self.program[instr.operands[2]] = 0;
+                            self.program[instr.operands[2]] = BigInt::from(0);
                         }
                     }
                     Equals => {
                         if self.program[instr.operands[0]] == self.program[instr.operands[1]] {
-                            self.program[instr.operands[2]] = 1;
+                            self.program[instr.operands[2]] = BigInt::from(1);
                         } else {
-                            self.program[instr.operands[2]] = 0;
+                            self.program[instr.operands[2]] = BigInt::from(0);
                         }
                     }
-
+                    AdjustBase => {
+                        self.relative_base += self.program[instr.operands[0]].to_i32().unwrap();
+                    }
                     _ => unreachable!(),
                 };
             }
 
             state
         }
-    }
-
-    fn get_positions(p: &Vec<i32>, ip: &mut usize, n: usize) -> Vec<usize> {
-        let mut o = vec![0; n];
-        let mut op = p[*ip as usize] / 100;
-        let mut i = 0;
-        *ip += 1;
-        while i < n {
-            if op % 10 == 0 {
-                o[i] = p[*ip as usize] as usize;
-            } else {
-                o[i] = *ip as usize;
-            }
-            *ip += 1;
-            i += 1;
-            op /= 10;
-        }
-
-        o
     }
 }
