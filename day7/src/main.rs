@@ -20,7 +20,7 @@ fn parse_input(input: &str) -> Vec<i32> {
 }
 
 fn run_amplifiers(phase_seq: &Vec<i32>, program: &Vec<i32>) -> i32 {
-    let mut amplifiers: Vec<Computer> = phase_seq
+    let mut amplifiers = phase_seq
         .into_iter()
         .map(|phase| {
             let mut c = Computer::new(&program);
