@@ -13,12 +13,12 @@ fn main() {
         eprintln!("Cannot read from file {}", input_filename);
         std::process::exit(1);
     });
-
-    let mut computer = Computer::new(&int_computer::computer::read_instructions(&file_contents));
+    let instructions = int_computer::computer::read_instructions(&file_contents);
+    let mut computer = Computer::new(&instructions);
     computer.add_input(1);
     computer.run();
 
-    let mut computer2 = Computer::new(&int_computer::computer::read_instructions(&file_contents));
+    let mut computer2 = Computer::new(&instructions);
     computer2.add_input(2);
     computer2.run();
 
