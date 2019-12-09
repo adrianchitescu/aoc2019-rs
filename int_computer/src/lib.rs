@@ -1,10 +1,5 @@
-pub use num_bigint::BigInt;
 pub mod computer {
-    use std::collections::{VecDeque, HashMap};
-    use num_bigint::BigInt;
-    use num_traits::cast::ToPrimitive;
-    use num_traits::Zero;
-
+    use std::collections::{HashMap, VecDeque};
 
     #[derive(PartialEq, Debug, Clone)]
     pub enum InstructionType {
@@ -29,23 +24,22 @@ pub mod computer {
     #[derive(Debug, Clone)]
     pub struct Instruction {
         itype: InstructionType,
-        operands: Vec<usize>,
+        operands: Vec<i128>,
     }
 
     pub struct Computer {
-        program: Vec<BigInt>,
-        memory: HashMap<usize, BigInt>,
-        output: VecDeque<BigInt>,
+        memory: HashMap<i128, i128>,
+        output: VecDeque<i128>,
         input: VecDeque<i32>,
-        instruction_pointer: usize,
+        instruction_pointer: i128,
         last_instr: Option<Instruction>,
-        relative_base: i32
+        relative_base: i128,
     }
 
-    pub fn read_instructions(input: &str) -> Vec<BigInt> {
+    pub fn read_instructions(input: &str) -> Vec<i128> {
         let mut vec = Vec::new();
         for n in input.split_terminator(',') {
-            if let Ok(f) = n.parse::<BigInt>() {
+            if let Ok(f) = n.parse::<i128>() {
                 vec.push(f);
             } else {
                 eprintln!("{}", n);
@@ -56,45 +50,61 @@ pub mod computer {
         vec
     }
 
-    impl  Computer {
-        pub fn new(p: &Vec<BigInt>) -> Computer {
-            let c = Computer {
-                program: p.clone(),
-                memory : HashMap::new(),
+    impl Computer {
+        pub fn new(p: &Vec<i128>) -> Computer {
+            let mut c = Computer {
+                memory: HashMap::new(),
                 output: VecDeque::new(),
                 input: VecDeque::new(),
                 instruction_pointer: 0,
                 last_instr: None,
-                relative_base : 0
+                relative_base: 0,
             };
+
+            for (index, v) in p.into_iter().enumerate() {
+                c.memory.insert(index as i128, *v);
+            }
+
             c
         }
 
+        fn memwrite(&mut self, pos: i128, value: i128) {
+            self.memory.insert(pos, value);
+        }
+
+        fn memread(&self, pos: i128) -> i128 {
+            match self.memory.get(&pos) {
+                Some(v) => *v,
+                None => unreachable!(),
+            }
+        }
         pub fn add_input(&mut self, v: i32) {
             self.input.push_back(v);
         }
 
-        pub fn get_output(&mut self) -> Option<BigInt> {
+        pub fn get_output(&mut self) -> Option<i128> {
             self.output.pop_front()
         }
 
-        pub fn get_exit_value(&mut self) -> Option<BigInt> {
+        pub fn get_exit_value(&mut self) -> Option<i128> {
             self.output.pop_back()
         }
 
-        pub fn get_positions(&mut self, n: usize) -> Vec<usize> {
+        pub fn get_positions(&mut self, n: usize) -> Vec<i128> {
             let mut o = vec![0; n];
-            let op_code:BigInt = &self.program[self.instruction_pointer] / 100;
-
-            let mut op = op_code.to_usize().unwrap();
+            let mut op = self.memread(self.instruction_pointer) / 100;
             let mut i = 0;
             self.instruction_pointer += 1;
             while i < n {
                 match op % 10 {
-                    0 => { o[i] = self.program[self.instruction_pointer].to_usize().unwrap()}
-                    1 => { o[i] = self.instruction_pointer; }
-                    2 => { o[i] = (self.relative_base + &self.program[self.instruction_pointer]).to_usize().unwrap();}
-                    _ => unreachable!()
+                    0 => o[i] = self.memread(self.instruction_pointer),
+                    1 => {
+                        o[i] = self.instruction_pointer;
+                    }
+                    2 => {
+                        o[i] = self.relative_base + (self.memread(self.instruction_pointer));
+                    }
+                    _ => unreachable!(),
                 };
 
                 self.instruction_pointer += 1;
@@ -111,7 +121,7 @@ pub mod computer {
                 return i;
             }
 
-            let operation = self.program[self.instruction_pointer].to_usize().unwrap();
+            let operation = self.memread(self.instruction_pointer) as usize;
             let mut instr: Instruction = Instruction {
                 itype: InstructionType::Add,
                 operands: vec![],
@@ -166,37 +176,32 @@ pub mod computer {
             use InstructionType::*;
             let state: State;
             loop {
-                if self.instruction_pointer >= self.program.len() {
-                    state = State::Done;
-                    break;
-                }
                 let instr = self.next_instruction();
-
                 if instr.itype == Exit {
                     state = State::Done;
                     break;
                 }
                 if instr.itype == Output {
-                    self.output.push_back(self.program[instr.operands[0]].clone());
+                    self.output.push_back(self.memread(instr.operands[0]));
                     continue;
                 }
 
-                let dest: usize;
                 match instr.itype {
                     Add => {
-                        dest = instr.operands[2];
-                        self.program[dest] =
-                            &self.program[instr.operands[0]] + &self.program[instr.operands[1]];
+                        self.memwrite(
+                            instr.operands[2],
+                            self.memread(instr.operands[0]) + self.memread(instr.operands[1]),
+                        );
                     }
                     Multiply => {
-                        dest = instr.operands[2];
-                        self.program[dest] =
-                            &self.program[instr.operands[0]] * &self.program[instr.operands[1]];
+                        self.memwrite(
+                            instr.operands[2],
+                            self.memread(instr.operands[0]) * self.memread(instr.operands[1]),
+                        );
                     }
                     Input => {
-                        dest = instr.operands[0];
                         if let Some(i) = self.input.pop_front() {
-                            self.program[dest] = BigInt::from(i);
+                            self.memwrite(instr.operands[0], i as i128);
                         } else {
                             self.last_instr = Some(instr);
                             state = State::WaitingInput;
@@ -204,31 +209,31 @@ pub mod computer {
                         }
                     }
                     JumpIfTrue => {
-                        if !self.program[instr.operands[0]].is_zero() {
-                            self.instruction_pointer = self.program[instr.operands[1]].to_usize().unwrap();
+                        if self.memread(instr.operands[0]) != 0 {
+                            self.instruction_pointer = self.memread(instr.operands[1]);
                         }
                     }
                     JumpIfFalse => {
-                        if self.program[instr.operands[0]].is_zero() {
-                            self.instruction_pointer = self.program[instr.operands[1]].to_usize().unwrap();
+                        if self.memread(instr.operands[0]) == 0 {
+                            self.instruction_pointer = self.memread(instr.operands[1]);
                         }
                     }
                     LessThan => {
-                        if self.program[instr.operands[0]] < self.program[instr.operands[1]] {
-                            self.program[instr.operands[2]] = BigInt::from(1);
+                        if self.memread(instr.operands[0]) < self.memread(instr.operands[1]) {
+                            self.memwrite(instr.operands[2], 1);
                         } else {
-                            self.program[instr.operands[2]] = BigInt::from(0);
+                            self.memwrite(instr.operands[2], 0);
                         }
                     }
                     Equals => {
-                        if self.program[instr.operands[0]] == self.program[instr.operands[1]] {
-                            self.program[instr.operands[2]] = BigInt::from(1);
+                        if self.memread(instr.operands[0]) == self.memread(instr.operands[1]) {
+                            self.memwrite(instr.operands[2], 1);
                         } else {
-                            self.program[instr.operands[2]] = BigInt::from(0);
+                            self.memwrite(instr.operands[2], 0);
                         }
                     }
                     AdjustBase => {
-                        self.relative_base += self.program[instr.operands[0]].to_i32().unwrap();
+                        self.relative_base += self.memread(instr.operands[0]);
                     }
                     _ => unreachable!(),
                 };

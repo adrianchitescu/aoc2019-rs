@@ -18,6 +18,11 @@ fn main() {
     computer.add_input(1);
     computer.run();
 
+    let mut computer2 = Computer::new(&int_computer::computer::read_instructions(&file_contents));
+    computer2.add_input(2);
+    computer2.run();
+
     println!("BOOST keycode = {}", computer.get_output().unwrap());
+    println!("Distress coordinates = {}", computer2.get_output().unwrap());
 
 }
