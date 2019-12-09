@@ -29,13 +29,13 @@ fn main() {
 
     let vec = parse_input(&file_contents);
     // Part1
-    let mut comp = Computer::new(&vec.clone());
+    let mut comp = Computer::new32(&vec.clone());
     comp.add_input(1);
     comp.run();
     println!("Part1 answer: {:?}", comp.get_exit_value());
 
     // Part2
-    let mut comp2 = Computer::new(&vec.clone());
+    let mut comp2 = Computer::new32(&vec.clone());
     comp2.add_input(5);
     comp2.run();
     println!("Part2 answer: {:?}", comp2.get_exit_value());

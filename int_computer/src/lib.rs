@@ -61,11 +61,16 @@ pub mod computer {
                 relative_base: 0,
             };
 
-            for (index, v) in p.into_iter().enumerate() {
-                c.memory.insert(index as i128, *v);
-            }
+            c.memory = (0..)
+                .into_iter()
+                .zip(p.into_iter().cloned())
+                .into_iter()
+                .collect();
 
             c
+        }
+        pub fn new32(p: &Vec<i32>) -> Computer {
+            Computer::new(&p.into_iter().cloned().map(|x| x as i128).collect())
         }
 
         fn memwrite(&mut self, pos: i128, value: i128) {
@@ -76,6 +81,12 @@ pub mod computer {
             match self.memory.get(&pos) {
                 Some(v) => *v,
                 None => unreachable!(),
+            }
+        }
+        fn is_valid_mem(&self, pos:i128) -> bool {
+            match self.memory.get(&pos) {
+                Some(_) => true,
+                None => false,
             }
         }
         pub fn add_input(&mut self, v: i32) {
@@ -176,6 +187,10 @@ pub mod computer {
             use InstructionType::*;
             let state: State;
             loop {
+                if !self.is_valid_mem(self.instruction_pointer) {
+                    state = State::Done;
+                    break;
+                }
                 let instr = self.next_instruction();
                 if instr.itype == Exit {
                     state = State::Done;

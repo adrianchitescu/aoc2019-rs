@@ -20,10 +20,10 @@ fn parse_input(input: &str) -> Vec<i32> {
 }
 
 fn run_amplifiers(phase_seq: &Vec<i32>, program: &Vec<i32>) -> i32 {
-    let mut amplifiers = phase_seq
+    let mut amplifiers:Vec<Computer> = phase_seq
         .into_iter()
         .map(|phase| {
-            let mut c = Computer::new(&program);
+            let mut c = Computer::new32(program);
             c.add_input(*phase);
             c
         })
@@ -33,7 +33,7 @@ fn run_amplifiers(phase_seq: &Vec<i32>, program: &Vec<i32>) -> i32 {
     let mut index = 0;
     loop {
         if let Some(o) = last_out {
-            amplifiers[index].add_input(o);
+            amplifiers[index].add_input(o as i32);
         }
         let s = amplifiers[index].run();
         if s == State::Done && index == amplifiers.len() - 1 {
@@ -45,7 +45,7 @@ fn run_amplifiers(phase_seq: &Vec<i32>, program: &Vec<i32>) -> i32 {
         index = (index + 1) % amplifiers.len();
     }
 
-    last_out.unwrap()
+    last_out.unwrap() as i32
 }
 
 fn get_max_signal(program: &Vec<i32>, phase: &[i32]) -> i32 {
