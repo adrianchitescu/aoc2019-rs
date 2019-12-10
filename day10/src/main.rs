@@ -1,107 +1,91 @@
 use std::fs;
 use std::env;
 use std::mem::swap;
+use itertools::Itertools;
+use std::cmp::Ordering::Equal;
+use std::collections::HashMap;
 
-#[derive(Debug)]
-struct Map {
-    data: Vec<char>,
-    rows: i32,
-    columns: i32
+fn parse_input(input: &str) -> Vec<(usize, usize)> {
+    input
+        .lines()
+        .enumerate()
+        .flat_map(|(y, line)| {
+            line
+                .chars()
+                .enumerate()
+                .filter(|(_, c)| *c == '#')
+                .map(move |(x, _)| (x, y))
+        })
+        .collect()
 }
-impl  Map {
-    fn is_asteroid(&self, pos: i32) -> bool {
-        self.data[pos as usize] == '#'
+
+fn get_best_position(asteroids : &Vec<(usize, usize)>) -> (usize, usize, (usize, usize)) {
+    let mut max =  0;
+    let mut max_index = 0;
+    for i in 0..asteroids.len() {
+        let can_see = asteroids
+            .iter()
+            .filter(|a| **a!= asteroids[i])
+            .map(|(x,y)| {
+                (*y as f64 - asteroids[i].1 as f64).atan2(*x as f64 - asteroids[i].0 as f64)
+            })
+            .unique_by(|a|a.to_bits())
+            .count();
+
+        if max < can_see {
+            max = can_see;
+            max_index = i;
+        }
     }
+
+    (max, max_index, asteroids[max_index])
 }
 
-fn get_line(map: &Map, a1: i32, a2: i32) -> (f32, f32){
-    let ast1:(i32, i32) = (a1 % map.columns, a1 / map.columns);
-    let ast2:(i32, i32) = (a2 % map.columns, a2 / map.columns);
-
-    let a:f32;
-    let b:f32;
-    if ast2.0 == ast1.0 {
-        a = 0.0;
-        b = ast1.1 as f32;
-    } else {
-        a = (ast2.1 - ast1.1) as f32 / (ast2.0 - ast1.0) as f32;
-        b = ast1.1 as f32 - (ast1.0 as f32 ) *  a;
-    }
-
-    (a, b)
-}
-fn parse_input(input: &str) -> Map {
-    let mut map:Map = Map {
-        data: Vec::new(),
-        rows: 0,
-        columns: 0
-    };
-    let lines = input.lines().into_iter();
-    for l in lines {
-        map.rows += 1;
-        map.data.extend(l.chars().into_iter())
-    }
-    map.columns = map.data.len() as i32 / map.rows;
-
+fn vaporize(ast: &Vec<(usize, usize)>, position: usize, nth: usize) -> (usize, usize){
+    let mut asteroids = ast.clone();
+    let center = asteroids[position];
+    asteroids.remove(position);
+    let mut map: HashMap<i32, Vec<((usize, usize), i32)>> =
+        asteroids
+            .iter()
+            .map(|(x,y)| {
+                (
+                    (((*y as f64 - center.1 as f64).atan2(*x as f64 - center.0 as f64) + std::f64::consts::PI/2.0 ) * 1000.0) as i32,
+                    (x,y)
+                )
+    //                +PI/2 to change reference angle to oY instead of oX
+            })
+            .fold(HashMap::new(), |mut m, p| {
+                let dist_to_center =
+                      (*(p.1).0 as i32 - center.0 as i32).abs()
+                    + (*(p.1).1 as i32 - center.1 as i32).abs() ;
+                m.entry(p.0).or_default().push(((*(p.1).0, *(p.1).1), dist_to_center));
+                m
+            });
     map
-}
+        .iter_mut()
+        .for_each(|(_, v)| {
+            v.sort_by_key(|(_, dist)| -dist)
+        });
 
-fn check_clear_line(map: &Map, p1: i32, p2: i32) -> bool {
-    let mut clear = true;
-    let mut i = p1;
-    let mut j = p2;
-    if i > j {
-        swap(&mut i, &mut j);
-    }
 
-    let x1 = i % map.columns;
-    let x2 = j % map.columns;
-    let line_eq = get_line(map, i, j);
-    if line_eq.0 == 0.0 {
-        for y in (i/map.columns+1..j/map.columns) {
-            if map.is_asteroid(y * map.columns + x1) {
-                clear = false;
-                break;
+    let the_one = map
+        .keys()
+        .cloned()
+        .sorted()
+        .cycle()
+        .skip_while(|angle| *angle < 0)
+        .filter_map(|ref angle| {
+            if let Some(a) = map.get_mut(angle) {
+                a.pop()
+            } else {
+                None
             }
-        }
-    }
-//    println!("{} {} -> {} {} {:?}", p1, p2, x1, x2, line_eq);
-    for x in (x1+1..x2) {
-        let y = (line_eq.0 * (x as f32) + line_eq.1);
-//        println!("\t {} {} {}", x, y, y.fract());
-        if y.fract() == 0.0 {
-            if map.is_asteroid(y as i32 * map.columns + x) {
-                clear = false;
-                break;
-            }
-        }
-    }
+        } )
+        .take(nth);
 
-//    println!("{} {} {}", p1, p2, clear);
-    clear
-}
-fn get_best_position(map: &Map) {
-//    let can_see: Vec<usize> = Vec::new();
-    let mut max : usize = 0;
-    for i in (0..map.rows*map.columns) {
-        if !map.is_asteroid(i) {
-            continue;
-        }
-        let mut count = 0;
-        for j in (0..map.rows*map.columns) {
-            if i == j || !map.is_asteroid(j){
-                continue;
-            }
-            if check_clear_line(map, i, j) {
-                count += 1;
-            }
 
-        }
-        if count > max {
-            max = count;
-            println!("new max {} at {}, {}", max, i%map.columns, i / map.columns);
-        }
-    }
+    the_one.last().unwrap().0
 }
 
 fn main() {
@@ -113,6 +97,11 @@ fn main() {
         eprintln!("Cannot read from file {}", input_filename);
         std::process::exit(1);
     });
+
     let map = parse_input(&file_contents);
-    get_best_position(&map);
+
+    let best_pos = get_best_position(&map);
+
+    println!("best pos = {:?}", best_pos);
+    println!("The 200th asteroid to be vaporized is {:?}",vaporize(&map, best_pos.1, 200));
 }
