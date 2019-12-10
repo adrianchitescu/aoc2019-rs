@@ -1,8 +1,6 @@
 use std::fs;
 use std::env;
-use std::mem::swap;
 use itertools::Itertools;
-use std::cmp::Ordering::Equal;
 use std::collections::HashMap;
 
 fn parse_input(input: &str) -> Vec<(usize, usize)> {
