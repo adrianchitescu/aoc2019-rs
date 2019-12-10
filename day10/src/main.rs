@@ -48,7 +48,7 @@ fn vaporize(ast: &Vec<(usize, usize)>, position: usize, nth: usize) -> (usize, u
             .iter()
             .map(|(x,y)| {
                 (
-                    (((*y as f64 - center.1 as f64).atan2(*x as f64 - center.0 as f64) + std::f64::consts::PI/2.0 ) * 1000.0) as i32,
+                    (((*y as f64 - center.1 as f64).atan2(*x as f64 - center.0 as f64) + std::f64::consts::PI/2.0 ) * 1000000.0) as i32,
                     (x,y)
                 )
     //                +PI/2 to change reference angle to oY instead of oX
@@ -72,6 +72,7 @@ fn vaporize(ast: &Vec<(usize, usize)>, position: usize, nth: usize) -> (usize, u
         .cloned()
         .sorted()
         .cycle()
+//        we start from the UP direction and the angle has been rotated above
         .skip_while(|angle| *angle < 0)
         .filter_map(|ref angle| {
             if let Some(a) = map.get_mut(angle) {
