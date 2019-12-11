@@ -78,9 +78,12 @@ pub mod computer {
         }
 
         fn memread(&self, pos: i128) -> i128 {
+            if pos < 0 {
+                unreachable!();
+            }
             match self.memory.get(&pos) {
                 Some(v) => *v,
-                None => unreachable!(),
+                None => 0,
             }
         }
         fn is_valid_mem(&self, pos:i128) -> bool {
