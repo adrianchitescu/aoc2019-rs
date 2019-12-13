@@ -47,9 +47,14 @@
       <sourceFolder url="file://$MODULE_DIR$/day12/examples" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/day12/tests" isTestSource="true" />
       <sourceFolder url="file://$MODULE_DIR$/day12/benches" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/day13/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/day13/examples" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/day13/tests" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/day13/benches" isTestSource="true" />
       <excludeFolder url="file://$MODULE_DIR$/day10/target" />
       <excludeFolder url="file://$MODULE_DIR$/day11/target" />
       <excludeFolder url="file://$MODULE_DIR$/day12/target" />
+      <excludeFolder url="file://$MODULE_DIR$/day13/target" />
       <excludeFolder url="file://$MODULE_DIR$/day3/target" />
       <excludeFolder url="file://$MODULE_DIR$/day4/target" />
       <excludeFolder url="file://$MODULE_DIR$/day5/target" />

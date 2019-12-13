@@ -15,7 +15,7 @@ pub mod computer {
         Exit,
     }
 
-    #[derive(PartialEq)]
+    #[derive(PartialEq, Debug)]
     pub enum State {
         WaitingInput,
         Done,
@@ -73,7 +73,7 @@ pub mod computer {
             Computer::new(&p.into_iter().cloned().map(|x| x as i128).collect())
         }
 
-        fn memwrite(&mut self, pos: i128, value: i128) {
+        pub fn memwrite(&mut self, pos: i128, value: i128) {
             self.memory.insert(pos, value);
         }
 
@@ -98,6 +98,12 @@ pub mod computer {
 
         pub fn get_output(&mut self) -> Option<i128> {
             self.output.pop_front()
+        }
+
+        pub fn get_all_output(&mut self) -> Vec<i128> {
+            let v = self.output.clone().into_iter().collect();
+            self.output.clear();
+            v
         }
 
         pub fn get_exit_value(&mut self) -> Option<i128> {
