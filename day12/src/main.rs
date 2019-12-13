@@ -1,8 +1,9 @@
-use std::fs;
-use std::env;
 use itertools::Itertools;
-use std::ops::IndexMut;
-use std::borrow::BorrowMut;
+use std::collections::HashMap;
+use std::env;
+use std::fs;
+
+extern crate num;
 
 #[derive(Copy, Clone, Debug)]
 struct Moon {
@@ -11,24 +12,24 @@ struct Moon {
     z: i32,
     vx: i32,
     vy: i32,
-    vz: i32
+    vz: i32,
 }
 impl Moon {
     fn new(coordinates: &str) -> Moon {
-        let c:Vec<i32> = coordinates
+        let c: Vec<i32> = coordinates
             .split_terminator(',')
             .into_iter()
-            .map(|n| {
-                if let Ok(nn) = n.parse::<i32>() {
-                    nn
-                } else {
-                    0
-                }
-            })
+            .map(|n| if let Ok(nn) = n.parse::<i32>() { nn } else { 0 })
             .collect();
 
-        Moon { x: c[0], y: c[1], z : c[2],
-            vx: 0, vy: 0, vz: 0 }
+        Moon {
+            x: c[0],
+            y: c[1],
+            z: c[2],
+            vx: 0,
+            vy: 0,
+            vz: 0,
+        }
     }
 
     fn potential_energy(&self) -> i32 {
@@ -44,11 +45,11 @@ impl Moon {
     }
 
     fn apply_gravity(&mut self, m: &mut Moon) {
-        let  axis_gravity = |&c1, &c2, v1: &mut i32, v2: &mut i32| {
+        let axis_gravity = |&c1, &c2, v1: &mut i32, v2: &mut i32| {
             if c1 < c2 {
                 *v1 += 1;
                 *v2 -= 1;
-            } else if  c1 > c2 {
+            } else if c1 > c2 {
                 *v2 += 1;
                 *v1 -= 1;
             }
@@ -64,33 +65,67 @@ impl Moon {
         self.y += self.vy;
         self.z += self.vz;
     }
-
 }
 fn parse_input(input: &str) -> Vec<Moon> {
-    input
-        .lines()
-        .map(Moon::new)
-        .collect()
+    input.lines().map(Moon::new).collect()
 }
 
-fn get_energy(m: &Vec<Moon>, steps: usize) -> i32{
+fn get_coordinate_state(moons: &Vec<Moon>, coordinate: char) -> String {
+    moons
+        .into_iter()
+        .map(|m| match coordinate {
+            'x' => format!("{}:{}", m.x, m.vx),
+            'y' => format!("{}:{}", m.y, m.vy),
+            'z' => format!("{}:{}", m.z, m.vz),
+            _ => unreachable!(),
+        })
+        .collect::<Vec<_>>()
+        .concat()
+}
+
+fn simulate(m: &Vec<Moon>, steps: i32) {
     let mut moons = m.clone();
-    let combinations= (0..moons.len()).combinations(2);
-    println!("{:?}", combinations);
-    for _ in 0..steps {
-//        println!("{:?}", moons);
+    let coordinates: Vec<char> = vec!['x', 'y', 'z'];
+    let mut cycle_length: HashMap<char, i32> = HashMap::new();
+    let initial_state: Vec<String> = coordinates
+        .clone()
+        .into_iter()
+        .map(|c| get_coordinate_state(&moons, c))
+        .collect();
 
+    for i in 1.. {
         for c in (0..moons.len()).combinations(2) {
-            let (a,b) = moons.split_at_mut(c[1]);
+            let (a, b) = moons.split_at_mut(c[1]);
             a[c[0]].apply_gravity(&mut b[0]);
-
         }
         moons.iter_mut().for_each(|m: &mut Moon| m.apply_velocity());
 
+        for index in 0..coordinates.len() {
+            if !cycle_length.contains_key(&coordinates[index]) {
+                if initial_state[index] == get_coordinate_state(&moons, coordinates[index]) {
+                    cycle_length.insert(coordinates[index], i);
+                }
+            }
+        }
+
+        if i == steps {
+            let total_energy: i32 = moons.iter().map(|m| m.total_energy()).sum();
+            println!("Total energy after {} = {}", steps, total_energy);
+        }
+        if cycle_length.len() == coordinates.len() {
+            let total_length = cycle_length
+                .clone()
+                .into_iter()
+                .fold(1 as i64, |acc, coord_cy_len_| {
+                    num::integer::lcm(acc, coord_cy_len_.1 as i64)
+                });
+            println!("Cycle length = {} (found after {} steps)", total_length, i);
+        }
+
+        if i >= steps && cycle_length.len() == coordinates.len() {
+            break;
+        }
     }
-
-    moons.iter().map(|m| m.total_energy()).sum()
-
 }
 
 fn main() {
@@ -103,5 +138,5 @@ fn main() {
         std::process::exit(1);
     });
     let moons = parse_input(&file_contents);
-    println!("total energy after 100 = {}", get_energy(&moons, 1000));
+    simulate(&moons, 1000);
 }
