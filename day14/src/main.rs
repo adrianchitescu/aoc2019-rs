@@ -1,9 +1,9 @@
 extern crate regex;
-use std::env;
-use std::fs;
+use regex::Regex;
 use std::collections::HashMap;
 use std::collections::VecDeque;
-use regex::Regex;
+use std::env;
+use std::fs;
 
 type Reaction = (i64, Vec<(String, i64)>);
 
@@ -32,9 +32,13 @@ fn get_ore(reactions: &HashMap<String, Reaction>, total_fuel: i64) -> i64 {
     let mut extra: HashMap<String, i64> = HashMap::new();
     let mut total_ore = 0;
     let fuel_r: &Reaction = reactions.get("FUEL").unwrap();
-    queue.extend(fuel_r.1.clone().into_iter().map(|(s,c)|{
-        (s, c as i64 * total_fuel)
-    }));
+    queue.extend(
+        fuel_r
+            .1
+            .clone()
+            .into_iter()
+            .map(|(s, c)| (s, c as i64 * total_fuel)),
+    );
 
     while queue.len() > 0 {
         let (substance, mut quantity) = queue.pop_front().unwrap();
@@ -53,7 +57,7 @@ fn get_ore(reactions: &HashMap<String, Reaction>, total_fuel: i64) -> i64 {
         }
         // we still need @quantity of substance
         let (oq, rvec) = reactions.get(&substance).unwrap();
-        let mut multiplier = quantity/ oq;
+        let mut multiplier = quantity / oq;
         if quantity % oq != 0 {
             multiplier += 1;
         }
@@ -62,9 +66,7 @@ fn get_ore(reactions: &HashMap<String, Reaction>, total_fuel: i64) -> i64 {
         if extra_q > 0 {
             extra.insert(substance, extra_q as i64);
         }
-        queue.extend(rvec.clone().into_iter().map(|(s,c)|{
-            (s, c * multiplier)
-        }))     
+        queue.extend(rvec.clone().into_iter().map(|(s, c)| (s, c * multiplier)))
     }
 
     total_ore
@@ -75,7 +77,7 @@ fn get_max_fuel_for(total_ore: i64, reactions: &HashMap<String, Reaction>) -> i6
     let mut range = (ore_per_fuel, ore_per_fuel * 2);
 
     loop {
-        if range.1 - range.0 <2 {
+        if range.1 - range.0 < 2 {
             break;
         }
         let mid = (range.1 + range.0) / 2;
@@ -83,7 +85,7 @@ fn get_max_fuel_for(total_ore: i64, reactions: &HashMap<String, Reaction>) -> i6
         if ore < total_ore {
             range = (mid + 1, range.1);
         } else {
-            range = (range.0, mid -1);
+            range = (range.0, mid - 1);
         }
     }
 
@@ -101,8 +103,11 @@ fn main() {
     });
 
     let reactions = parse_reactions(&file_contents);
-    
+
     let ore_per_fuel = get_ore(&reactions, 1) as i64;
     println!("1 fuel = {} ore", ore_per_fuel);
-    println!("max fuel = {:?}", get_max_fuel_for(1000000000000 as i64, &reactions));
+    println!(
+        "max fuel = {:?}",
+        get_max_fuel_for(1000000000000 as i64, &reactions)
+    );
 }
