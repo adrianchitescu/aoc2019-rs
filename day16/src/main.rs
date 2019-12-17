@@ -22,7 +22,7 @@ fn part1(sequence: &Vec<i32>, steps: usize) {
         .collect();
 
     let mut lst:Vec<i32> = sequence.iter().map(|x| *x as i32).collect();
-    for i in 0..steps {
+    for _ in 0..steps {
         lst = cyclon[0..]
             .into_iter()
             .map(|extended_pattern| {
@@ -36,61 +36,28 @@ fn part1(sequence: &Vec<i32>, steps: usize) {
             .collect();
     }
 
-    println!("sequence after {} step : \n {:?}", steps, lst);
+    
+    println!("Part1 : {}", get_number(&lst[0..], 8));
 }
 
-// fn get_at_offset(sequence: &Vec<u32>, steps: usize, offset: i32) {
-//     let base_pattern: Vec<i32> = vec![0, 1, 0, -1];
-//     let cyclon: Vec<Vec<(usize, i32)>> = (1..=sequence.len())
-//         .into_iter()
-//         .map(|i| {
-//             base_pattern.clone()
-//                 .into_iter()
-//                 .cycle()
-//                 .map(|v| vec![v;i])
-//                 .flatten()
-//                 .enumerate()
-//                 .skip(1)
-//                 .take(sequence.len())
-//                 .into_iter()
-//                 .skip__while(|(_, x)| x == 0)
-//                 .collect()
-//         })
-//         .collect();
-
-//     println!("{:?}", cyclon);
-//     // let mut lst:Vec<i32> = sequence.iter().map(|x| *x as i32).collect();
-//     // for i in 0..steps {
-//     //     lst = cyclon[0..]
-//     //         .into_iter()
-//     //         .map(|(index: usize, extended_pattern:)| {
-//     //             let s: i32 = extended_pattern
-//     //                 .into_iter()
-//     //                 .enumerate()
-//     //                 .map(|p| (lst[index] * p ))
-//     //                 .sum();
-//     //             s.abs() % 10
-//     //         })
-//     //         .collect();
-//     // }
-
-    // println!("sequence after {} step : \n {:?}", steps, lst);
-// }
-
-fn part2(sequence: &Vec<i32>, steps: usize, offset: usize) {
-    let mut lst:Vec<i32> = sequence.iter().map(|x| *x as i32).collect();
-    for s in 0..steps {
-        // lst[offset] = &sequence[offset..].into_iter().sum() %10;
-        let mut i = sequence.len() - 2;
-        while i >= offset-2 {
-            lst[i] = (lst[i] + lst[i+1]) % 10;
-            i -= 1;
+fn part2(sequence: &mut Vec<i32>, steps: usize) {
+    for _ in 0..steps {
+        for i in (0..sequence.len()-1).rev(){
+            sequence[i] = (sequence[i] + sequence[i+1]) % 10;
         }
-        // println!("{} {}", s, sequence.len() );
     }
 
-    let n = vec![0,1,2,3,4,5,6,7].into_iter().fold(0, |acc, i| acc * 10 + sequence[offset + i]);
-    println!("{:?}", n);
+    let n = get_number(&sequence[0..], 8);
+    println!("Real signal {:?}", n);
+}
+
+fn get_number(v: &[i32], digits: usize) -> i32 {
+    let mut n = 0;
+    for i in 0..digits {
+        n = n * 10 + v[i];
+    }
+
+    n
 }
 
 fn main() {
@@ -104,15 +71,16 @@ fn main() {
     });
 
     let sequence = parse_input(&file_contents);
-    // part1(&sequence, 100);
-    // println!("{:?}", sequence);
-    // get_at_offset(&sequence, 100, 0);
-    let mut repetitions = 10000 ;
-    let mut long_sequence = Vec::new();
-    while repetitions > 0 {
-        long_sequence.extend(sequence.clone().iter());
-        repetitions -= 1;
-    }
+    part1(&sequence, 100);
 
-    part2(&long_sequence, 100, 5970417);
+    let offset = get_number(&sequence[0..], 7);
+    let length = sequence.len();
+    let mut long_sequence:Vec<i32> = sequence
+        .into_iter()
+        .cycle()
+        .skip(offset as usize % length as usize)
+        .take(length * 10000 - offset as usize)
+        .collect();
+
+    part2(&mut long_sequence, 100);
 }
