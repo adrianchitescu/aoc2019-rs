@@ -36,7 +36,6 @@ fn part1(sequence: &Vec<i32>, steps: usize) {
             .collect();
     }
 
-    
     println!("Part1 : {}", get_number(&lst[0..], 8));
 }
 
@@ -73,13 +72,13 @@ fn main() {
     let sequence = parse_input(&file_contents);
     part1(&sequence, 100);
 
-    let offset = get_number(&sequence[0..], 7);
+    let offset = get_number(&sequence[0..], 7) as usize;
     let length = sequence.len();
     let mut long_sequence:Vec<i32> = sequence
         .into_iter()
         .cycle()
-        .skip(offset as usize % length as usize)
-        .take(length * 10000 - offset as usize)
+        .skip(offset % length)
+        .take(length * 10000 - offset)
         .collect();
 
     part2(&mut long_sequence, 100);
