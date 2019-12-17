@@ -1,3 +1,4 @@
+use std::fs;
 pub mod computer {
     use std::collections::{HashMap, VecDeque};
 
@@ -71,6 +72,16 @@ pub mod computer {
         }
         pub fn new32(p: &Vec<i32>) -> Computer {
             Computer::new(&p.into_iter().cloned().map(|x| x as i128).collect())
+        }
+
+        pub fn new_from_file(filename: &String) -> Computer {
+            let file_contents = std::fs::read_to_string(&filename).unwrap_or_else(|err| {
+                eprintln!("Error : {}", err);
+                eprintln!("Cannot read from file {}", filename);
+                std::process::exit(1);
+            });
+
+            Computer::new( &read_instructions(&file_contents))
         }
 
         pub fn memwrite(&mut self, pos: i128, value: i128) {
