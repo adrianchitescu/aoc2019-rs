@@ -194,9 +194,9 @@ impl Robot {
             Orientation::NORTH => (self.get((x - 1, y)), self.get((x + 1, y))),
             Orientation::EAST  => (self.get((x, y -1)),  self.get((x, y + 1))),
             Orientation::SOUTH => (self.get((x + 1, y)), self.get((x - 1, y))),
-            Orientation::WEST  => (self.get((x, y + 1)), self.get((x, y + 1)))
+            Orientation::WEST  => (self.get((x, y + 1)), self.get((x, y - 1)))
         };
-
+        // println!("{:?},{:?}", left, right);
         if *left.unwrap_or(&mut 0) == '#' as u8 {
             print!("L,");
             self.orientation = Orientation::from_i32((self.orientation as i32- 1 + 4) % 4).unwrap();
@@ -206,6 +206,8 @@ impl Robot {
             self.orientation = Orientation::from_i32((self.orientation as i32 + 1 + 4) % 4).unwrap();
             Some('R' as u8)
         } else {
+            println!("Nothing to do {}, {}, {:?}", self.x, self.y, self.orientation);
+
             None
         }
     }
@@ -235,7 +237,7 @@ fn get_move_routine(view: &Vec<Vec<u8>>) -> Vec<u8> {
 
     let v:Vec<u8> = robot
         .into_iter()
-        .take(100)
+        .take(10000)
         .collect();
 
     routine
