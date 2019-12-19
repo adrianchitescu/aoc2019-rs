@@ -238,40 +238,6 @@ fn get_move_routine(view: &Vec<Vec<u8>>) -> Vec<u8> {
         .take(100)
         .collect();
 
-    // loop {
-    //     i += 1;
-    //     if i == 50 {
-    //         break;
-    //     }
-    //     let delta_next = dv[orientation as usize];
-    //     if is_scaffold(&mview, position, delta_next) {
-    //         if !is_intersection(&mview, position) {
-    //             mview[position.1 as usize][position.0 as usize] = '.' as u8;
-    //         }
-    //         current_length += 1;
-    //         position = (position.0 + delta_next.0, position.1 + delta_next.1);
-    //     } else {
-    //         print!("{}, {:?}", current_length, orientation);
-    //         current_length = 0;
-    //         if let Some(scaff_position) = dv.iter().position(|delta| is_scaffold(&mview, position, *delta)) {
-    //             println!("{}", scaff_position);
-    //             if (scaff_position  + 1) % 4 == orientation as usize {
-    //                 orientation = Orientation::from_i32((orientation as i32 - 1) % 4).unwrap();
-    //                 print!("L,");
-    //             } else {
-    //                 orientation = Orientation::from_i32((orientation as i32 + 1) % 4).unwrap();
-    //                 print!("R,");
-    //             }
-    //             let delta_next = dv[scaff_position];
-    //             // position = (position.0 + delta_next.0, position.1 + delta_next.1);
-    //         } else {
-    //             break;
-    //         }
-    //     }
-    //     // print_v(&mview);
-
-    // }
-
     routine
 }
 
