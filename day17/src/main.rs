@@ -135,6 +135,8 @@ struct Robot {
 impl Robot {
     fn new (view: &Vec<Vec<u8>>) -> Robot {
         let (orientation, position) =  get_start_position(view).unwrap();
+        print_v(&view);
+        println!("{:?}", (orientation, position));
         Robot {
             map : view.clone(),
             x : position.0,
@@ -142,7 +144,15 @@ impl Robot {
             orientation : orientation
         }
     }
-    fn get(&mut self, (x, y): (i32, i32)) -> Option<&mut u8> {
+    fn get(&self, (x, y): (i32, i32)) -> Option<&u8> {
+        if let Some(l) = self.map.get(y as usize) {
+            l.get(x as usize)
+        } else {
+            None
+        }
+    }
+
+    fn get_mut(&mut self, (x, y): (i32, i32)) -> Option<&mut u8> {
         if let Some(l) = self.map.get_mut(y as usize) {
             l.get_mut(x as usize)
         } else {
@@ -152,22 +162,23 @@ impl Robot {
 
     fn move_ahead(&mut self) -> bool {
         let (mut new_x, mut new_y) = (self.x, self.y);
-        println!();
-        print!("{:?}", self.orientation);
+        // println!();
+        // print!("{:?}", self.orientation);
         match self.orientation {
             Orientation::NORTH => { new_y -= 1; },
             Orientation::EAST  => { new_x += 1; },
             Orientation::SOUTH => { new_y += 1; },
             Orientation::WEST  => { new_x -= 1; }
         };
-        let ahead = self.get((new_x, new_y));
-        if let Some(p) =  ahead {
-            print!(" {:?}   ", *p as char);
+        // print!("  {:?}  ", (new_x, new_y));
+        let ahead = self.get_mut((new_x, new_y));
+        if let Some(mut p) =  ahead {
+            // print!(" {:?}   ", *p as char);
             if *p == '#' as u8 {
-                println!(" ---- Moved to {},{}", new_x, new_y);
+                // println!(" ---- Moved to {},{}", new_x, new_y);
+                // *p = ('.' as u8);
                 self.x = new_x;
-                self.y = new_x;
-                *p = '.' as u8;
+                self.y = new_y;
                 true
             } else {
                 false
@@ -188,11 +199,11 @@ impl Robot {
 
         if *left.unwrap_or(&mut 0) == '#' as u8 {
             print!("L,");
-            self.orientation = Orientation::from_i32((self.orientation as i32- 1) % 4).unwrap();
+            self.orientation = Orientation::from_i32((self.orientation as i32- 1 + 4) % 4).unwrap();
             Some('L' as u8)
         } else if *right.unwrap_or(&mut 0) == '#' as u8 {
             print!("R,");
-            self.orientation = Orientation::from_i32((self.orientation as i32 + 1) % 4).unwrap();
+            self.orientation = Orientation::from_i32((self.orientation as i32 + 1 + 4) % 4).unwrap();
             Some('R' as u8)
         } else {
             None
