@@ -9,3 +9,5 @@ edition = "2018"
 [dependencies]
 int_computer= { path= "../int_computer" }
 itertools="0.8.2"
+num-traits = "0.2"
+num-derive = "0.2"
