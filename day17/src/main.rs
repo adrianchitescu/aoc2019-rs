@@ -1,10 +1,13 @@
 extern crate int_computer;
+extern crate regex;
 
 use std::env;
 use int_computer::computer::*;
 use itertools::Itertools;
 use num_derive::FromPrimitive;    
 use num_traits::FromPrimitive;
+use regex::Regex;
+
 
 #[derive(Copy, Debug, Clone, FromPrimitive)]
 enum Orientation {
@@ -97,21 +100,16 @@ fn get_start_position(view: &Vec<Vec<u8>>) -> Option<(Orientation, (i32, i32))> 
 }
 
 fn is_scaffold(view: &Vec<Vec<u8>>, (x, y): (i32, i32), (delta_x, delta_y): (i32, i32)) -> bool {
-    // print!("\t is_scaff {:?} {:?}", position, delta);
     if let Some(l) = view.get((y + delta_y) as usize) {
         if let Some(v) = l.get((x + delta_x) as usize) {
             if *v == '#' as u8 {
-                // println!(" = true");
             } else {
-                // println!("= FALSE");
             }
             *v == '#' as u8
         } else {
-            // println!("= FALSE");
             false
         }
     } else {
-        // println!("= FALSE");
         false
     }
 }
@@ -162,21 +160,15 @@ impl Robot {
 
     fn move_ahead(&mut self) -> bool {
         let (mut new_x, mut new_y) = (self.x, self.y);
-        // println!();
-        // print!("{:?}", self.orientation);
         match self.orientation {
             Orientation::NORTH => { new_y -= 1; },
             Orientation::EAST  => { new_x += 1; },
             Orientation::SOUTH => { new_y += 1; },
             Orientation::WEST  => { new_x -= 1; }
         };
-        // print!("  {:?}  ", (new_x, new_y));
         let ahead = self.get_mut((new_x, new_y));
         if let Some(mut p) =  ahead {
-            // print!(" {:?}   ", *p as char);
             if *p == '#' as u8 {
-                // println!(" ---- Moved to {},{}", new_x, new_y);
-                // *p = ('.' as u8);
                 self.x = new_x;
                 self.y = new_y;
                 true
@@ -188,7 +180,7 @@ impl Robot {
         }
     }
 
-    fn rotate(&mut self) -> Option<u8> {
+    fn rotate(&mut self) -> Option<String> {
         let (x, y) = (self.x, self.y);
         let (left, right) = match self.orientation {
             Orientation::NORTH => (self.get((x - 1, y)), self.get((x + 1, y))),
@@ -198,49 +190,75 @@ impl Robot {
         };
         // println!("{:?},{:?}", left, right);
         if *left.unwrap_or(&mut 0) == '#' as u8 {
-            print!("L,");
             self.orientation = Orientation::from_i32((self.orientation as i32- 1 + 4) % 4).unwrap();
-            Some('L' as u8)
+            Some("L".to_string())
         } else if *right.unwrap_or(&mut 0) == '#' as u8 {
-            print!("R,");
             self.orientation = Orientation::from_i32((self.orientation as i32 + 1 + 4) % 4).unwrap();
-            Some('R' as u8)
+            Some("R".to_string())
         } else {
-            println!("Nothing to do {}, {}, {:?}", self.x, self.y, self.orientation);
-
             None
         }
     }
 }
 
 impl Iterator for Robot {
-    type Item = u8;
-    fn next(&mut self) -> Option<u8> {
+    type Item = String;
+    fn next(&mut self) -> Option<String> {
         let mut length = 0;
         while self.move_ahead() {
             length += 1;
         }
         if length > 0 {
-            print!("{},", length);
-            Some(length)
+            Some(length.to_string())
         } else {
             self.rotate()
         }
     }
 }
 
-fn get_move_routine(view: &Vec<Vec<u8>>) -> Vec<u8> {
-    let mut routine: Vec<u8> = Vec::new();
-    let mut robot = Robot::new(&view);
-
-    let mut i = 0;
-
-    let v:Vec<u8> = robot
+fn get_move_routine(view: &Vec<Vec<u8>>) -> String {
+    let robot = Robot::new(&view);
+    robot
         .into_iter()
-        .take(10000)
-        .collect();
+        .join(",")
+}
+fn get_next_start(s: &String) -> usize {
+    s
+        .chars()
+        .position(|ch| "RL01234567890".contains(ch))
+        .unwrap_or(0)
+}
 
-    routine
+fn split_routine(routine: String) -> String {
+    let mut active_routine:Vec<String> = vec!["".to_string();3];
+    let mut A: String;
+    let mut B: String;
+    let mut C: String;
+    let re = Regex::new(r"[^ABC,]").unwrap();
+    for i in 1..21 {
+        active_routine[0] = routine.clone();
+        A = routine[0..i].to_string();
+        active_routine[0] = active_routine[0].replace(&A, "A");
+        for j in 1..21 {
+            let s = get_next_start(&active_routine[0]);
+            B = active_routine[0][s..s+j].to_string();
+            active_routine[1] = active_routine[0].replace(&B, "B");
+            for k in 1..21 {
+                let s = get_next_start(&active_routine[1]);
+                C = active_routine[1][s..s+k].to_string();
+                active_routine[2] = active_routine[1].replace(&C, "C");
+                if !re.is_match(&active_routine[2]) {
+                    println!("A={:?}", A);
+                    println!("B={:?}", B);
+                    println!("C={:?}", C);
+                    println!("{:?}", active_routine);
+                    // active_routine[2]
+                    return format!("{}\n{}\n{}\n{}\nn", active_routine[2], A, B, C);
+                }
+            }
+        }
+    }
+    "".to_string()
 }
 
 fn main() {
@@ -248,5 +266,19 @@ fn main() {
     let mut computer = Computer::new_from_file(&args[1]);
     let mut view = get_view(&mut computer);
     println!("{:?}", get_intersections(&view));
-    get_move_routine(&view);
+    let cinput:Vec<i32> = split_routine(get_move_routine(&view))
+        .chars()
+        .map(|c| c as i32)
+        .collect();
+    println!("tosend \n{:?}", cinput);
+
+    let mut part2computer = Computer::new_from_file(&args[1]);
+    
+    part2computer.memwrite(0, 2);
+    for c in cinput {
+        part2computer.add_input(c);
+    }
+    // part2computer.run();
+    part2computer.run();
+    println!("{:?}", part2computer.get_all_output());
 }
