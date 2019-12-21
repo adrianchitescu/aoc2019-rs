@@ -63,6 +63,14 @@
       <sourceFolder url="file://$MODULE_DIR$/day16/examples" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/day16/tests" isTestSource="true" />
       <sourceFolder url="file://$MODULE_DIR$/day16/benches" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/day18/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/day18/examples" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/day18/tests" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/day18/benches" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/day17/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/day17/examples" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/day17/tests" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/day17/benches" isTestSource="true" />
       <excludeFolder url="file://$MODULE_DIR$/day10/target" />
       <excludeFolder url="file://$MODULE_DIR$/day11/target" />
       <excludeFolder url="file://$MODULE_DIR$/day12/target" />
@@ -70,6 +78,8 @@
       <excludeFolder url="file://$MODULE_DIR$/day14/target" />
       <excludeFolder url="file://$MODULE_DIR$/day15/target" />
       <excludeFolder url="file://$MODULE_DIR$/day16/target" />
+      <excludeFolder url="file://$MODULE_DIR$/day17/target" />
+      <excludeFolder url="file://$MODULE_DIR$/day18/target" />
       <excludeFolder url="file://$MODULE_DIR$/day3/target" />
       <excludeFolder url="file://$MODULE_DIR$/day4/target" />
       <excludeFolder url="file://$MODULE_DIR$/day5/target" />

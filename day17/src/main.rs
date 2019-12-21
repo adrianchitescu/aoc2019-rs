@@ -34,14 +34,18 @@ fn get_view(computer: &mut Computer) -> Vec<Vec<u8>> {
         println!("Failed to parse");
     }
 
-    for line in view.clone() {
-        for j in line {
-            print!("{}", j as char);
-        }
-        println!();
-    }
-
     view
+}
+
+fn display(computer: &mut Computer) {
+    computer.run();
+    let last = computer.get_exit_value();
+    let output: Vec<i128> = computer.get_all_output();
+
+    for c in output {
+        print!("{}", (c as u8) as char);
+    }
+    println!("{:?}", last);
 }
 
 fn get_neighbours(current_position: &(i32, i32)) -> Vec<(i32, i32)> {
@@ -75,7 +79,6 @@ fn get_intersections(view: &Vec<Vec<u8>>) -> usize {
         }
     }
 
-    println!("{:?}", intersections);
     intersections.into_iter().sum()
 }
 
@@ -114,15 +117,6 @@ fn is_scaffold(view: &Vec<Vec<u8>>, (x, y): (i32, i32), (delta_x, delta_y): (i32
     }
 }
 
-fn print_v(view: &Vec<Vec<u8>>) {
-    for line in view {
-        for j in line {
-            print!("{}", *j as char);
-        }
-        println!();
-    }
-}
-
 struct Robot {
     map: Vec<Vec<u8>>,
     x: i32,
@@ -133,13 +127,11 @@ struct Robot {
 impl Robot {
     fn new (view: &Vec<Vec<u8>>) -> Robot {
         let (orientation, position) =  get_start_position(view).unwrap();
-        print_v(&view);
-        println!("{:?}", (orientation, position));
         Robot {
             map : view.clone(),
             x : position.0,
             y : position.1,
-            orientation : orientation
+            orientation
         }
     }
     fn get(&self, (x, y): (i32, i32)) -> Option<&u8> {
@@ -167,7 +159,7 @@ impl Robot {
             Orientation::WEST  => { new_x -= 1; }
         };
         let ahead = self.get_mut((new_x, new_y));
-        if let Some(mut p) =  ahead {
+        if let Some(p) =  ahead {
             if *p == '#' as u8 {
                 self.x = new_x;
                 self.y = new_y;
@@ -231,29 +223,31 @@ fn get_next_start(s: &String) -> usize {
 
 fn split_routine(routine: String) -> String {
     let mut active_routine:Vec<String> = vec!["".to_string();3];
-    let mut A: String;
-    let mut B: String;
-    let mut C: String;
+    let mut a_fn: String;
+    let mut b_fn: String;
+    let mut c_fn: String;
     let re = Regex::new(r"[^ABC,]").unwrap();
+
     for i in 1..21 {
         active_routine[0] = routine.clone();
-        A = routine[0..i].to_string();
-        active_routine[0] = active_routine[0].replace(&A, "A");
+        a_fn = routine[0..i].to_string();
+        active_routine[0] = active_routine[0].replace(&a_fn, "A");
+
         for j in 1..21 {
             let s = get_next_start(&active_routine[0]);
-            B = active_routine[0][s..s+j].to_string();
-            active_routine[1] = active_routine[0].replace(&B, "B");
+            b_fn = active_routine[0][s..s+j].to_string();
+            active_routine[1] = active_routine[0].replace(&b_fn, "B");
+
             for k in 1..21 {
                 let s = get_next_start(&active_routine[1]);
-                C = active_routine[1][s..s+k].to_string();
-                active_routine[2] = active_routine[1].replace(&C, "C");
+                c_fn = active_routine[1][s..s+k].to_string();
+                active_routine[2] = active_routine[1].replace(&c_fn, "C");
                 if !re.is_match(&active_routine[2]) {
-                    println!("A={:?}", A);
-                    println!("B={:?}", B);
-                    println!("C={:?}", C);
-                    println!("{:?}", active_routine);
-                    // active_routine[2]
-                    return format!("{}\n{}\n{}\n{}\nn", active_routine[2], A, B, C);
+                    println!("A={:?}", a_fn);
+                    println!("B={:?}", b_fn);
+                    println!("C={:?}", c_fn);
+                    println!("{:?}", active_routine[2]);
+                    return format!("{}\n{}\n{}\n{}\nn\n", active_routine[2], a_fn, b_fn, c_fn);
                 }
             }
         }
@@ -264,21 +258,15 @@ fn split_routine(routine: String) -> String {
 fn main() {
     let args: Vec<String> = env::args().collect();
     let mut computer = Computer::new_from_file(&args[1]);
-    let mut view = get_view(&mut computer);
+    let view = get_view(&mut computer);
     println!("{:?}", get_intersections(&view));
-    let cinput:Vec<i32> = split_routine(get_move_routine(&view))
-        .chars()
-        .map(|c| c as i32)
-        .collect();
-    println!("tosend \n{:?}", cinput);
 
+    let routines= split_routine(get_move_routine(&view));
     let mut part2computer = Computer::new_from_file(&args[1]);
-    
     part2computer.memwrite(0, 2);
-    for c in cinput {
-        part2computer.add_input(c);
+    for c in routines.chars() {
+        part2computer.add_input(c as i32);
     }
-    // part2computer.run();
-    part2computer.run();
-    println!("{:?}", part2computer.get_all_output());
+
+    display(&mut part2computer);
 }
