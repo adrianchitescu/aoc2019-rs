@@ -1,4 +1,3 @@
-use std::fs;
 pub mod computer {
     use std::collections::{HashMap, VecDeque};
 
@@ -31,7 +30,7 @@ pub mod computer {
     pub struct Computer {
         memory: HashMap<i128, i128>,
         output: VecDeque<i128>,
-        input: VecDeque<i32>,
+        input: VecDeque<i128>,
         instruction_pointer: i128,
         last_instr: Option<Instruction>,
         relative_base: i128,
@@ -103,7 +102,16 @@ pub mod computer {
                 None => false,
             }
         }
+
+        pub fn has_input(&self) -> bool {
+            !self.input.is_empty()
+        }
+
         pub fn add_input(&mut self, v: i32) {
+            self.input.push_back(v as i128);
+        }
+
+        pub fn add_input_128(&mut self, v: i128) {
             self.input.push_back(v);
         }
 
@@ -112,9 +120,7 @@ pub mod computer {
         }
 
         pub fn get_all_output(&mut self) -> Vec<i128> {
-            let v = self.output.clone().into_iter().collect();
-            self.output.clear();
-            v
+            self.output.drain(..).collect()
         }
 
         pub fn get_exit_value(&mut self) -> Option<i128> {
