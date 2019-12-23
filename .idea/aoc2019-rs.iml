@@ -75,6 +75,18 @@
       <sourceFolder url="file://$MODULE_DIR$/day21/examples" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/day21/tests" isTestSource="true" />
       <sourceFolder url="file://$MODULE_DIR$/day21/benches" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/day22/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/day22/examples" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/day22/tests" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/day22/benches" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/day23/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/day23/examples" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/day23/tests" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/day23/benches" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/day19/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/day19/examples" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/day19/tests" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/day19/benches" isTestSource="true" />
       <excludeFolder url="file://$MODULE_DIR$/day10/target" />
       <excludeFolder url="file://$MODULE_DIR$/day11/target" />
       <excludeFolder url="file://$MODULE_DIR$/day12/target" />
@@ -84,7 +96,10 @@
       <excludeFolder url="file://$MODULE_DIR$/day16/target" />
       <excludeFolder url="file://$MODULE_DIR$/day17/target" />
       <excludeFolder url="file://$MODULE_DIR$/day18/target" />
+      <excludeFolder url="file://$MODULE_DIR$/day19/target" />
       <excludeFolder url="file://$MODULE_DIR$/day21/target" />
+      <excludeFolder url="file://$MODULE_DIR$/day22/target" />
+      <excludeFolder url="file://$MODULE_DIR$/day23/target" />
       <excludeFolder url="file://$MODULE_DIR$/day3/target" />
       <excludeFolder url="file://$MODULE_DIR$/day4/target" />
       <excludeFolder url="file://$MODULE_DIR$/day5/target" />
