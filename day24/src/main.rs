@@ -1,16 +1,22 @@
 use std::env;
 use std::fs;
-use std::collections::HashSet;
+use std::collections::{HashSet, VecDeque};
 
 #[derive(Copy, Clone, PartialEq)]
 enum Tile {
     Empty = '.' as isize,
     Bug = '#' as isize
 }
+type Level = Vec<Vec<Tile>>;
+
 struct BugPlanet {
-    map: Vec<Vec<Tile>>,
+    map: Level,
     rating: i128,
     hash: HashSet<i128>
+}
+
+struct MultidimensionalBugPlanet {
+    dimensions: VecDeque<Level>
 }
 
 fn get_neighbours(current_position: (i32, i32)) -> Vec<(i32, i32)> {
@@ -20,6 +26,82 @@ fn get_neighbours(current_position: (i32, i32)) -> Vec<(i32, i32)> {
         (current_position.0 + 1, current_position.1),
         (current_position.0 - 1, current_position.1),
     ]
+}
+impl MultidimensionalBugPlanet {
+    fn new(input_filename: &String) -> MultidimensionalBugPlanet {
+        let file_contents = fs::read_to_string(input_filename).unwrap_or_else(|err| {
+            eprintln!("Error : {}", err);
+            eprintln!("Cannot read from file {}", input_filename);
+            std::process::exit(1);
+        });
+
+        MultidimensionalBugPlanet {
+            dimensions : VecDeque::from(vec![parse_bugs(&file_contents)])
+        }
+    }
+
+    fn count_neighbour_bugs((px,py): (i32, i32), lev: usize, dimensions: VecDeque<Level>) -> usize {
+        get_neighbours((pi,pj))
+            .into_iter()
+            .map(|(nx, ny)| -> Vec<(i32, i32, i32)> {
+                if nx == 2 && ny == 2 {
+                    let mut ns = Vec::new();
+                    if px == nx {
+                        for i in 0..5 {
+                            ns.push((lev as i32 + 1, i, 4*((ny>py) as i32));
+                        }
+                    } else {
+                        for i in 0..5 {
+                            ns.push((lev as i32 + 1, 4*((nx>px) as i32), i));
+                        }
+                    }
+                    return ns;
+                }
+
+                if nx < 0 || ny < 0 {
+                    return vec![(lev as i32 - 1, 2 - (x < 0) as i32, 2 - (y < 0) as i32)];
+                }
+                if nx > 5 || ny > 5 {
+                    return vec![(lev as i32 - 1, 2 + (x > 5) as i32, 2 + (y > 5) as i32)];
+                }
+
+                return vec![(lev as i32 + 1, nx, ny)];
+            })
+            .flatten()
+            .filter(|(level,x, y)|    {
+                if *level < 0 || *level > dimensions.len() - 1 {
+                    return false
+                }
+
+                dimensions[level][y][x] == Tile::Bug
+            })
+            .count()
+    }
+    fn  big_simulation(&mut self) -> i32 {
+        let old_map = self.dimensions.clone();
+        let mut total_bugs = 0;
+        for l in 0..old_map.len() {
+            for j in 0..5 {
+                for i in 0..5 {
+                    let bugs = self.count_neighbour_bugs((i, j), lev, &old_map);
+                    if old_map[l][j][i] == Tile::Bug {
+                        if bugs != 1 {
+                            self.dimensions[lev][j][i] = Tile::Empty;
+                        }
+                    } else {
+                        if bugs == 1 || bugs == 2 {
+                            self.dimensions[lev][j][i] = Tile::Bug;
+                        }
+                    }
+                    total_bugs += (self.dimensions[lev][j][i] == Tile::Bug) as i32;
+                }
+            }
+        }
+        //check if we should insert under first layer
+        
+        0
+    }
+
 }
 
 impl BugPlanet {
@@ -84,8 +166,8 @@ impl BugPlanet {
 
 }
 
-fn parse_bugs(file_contents: &String) -> Vec<Vec<Tile>> {
-    let mut bugs:Vec<Vec<Tile>> = Vec::new();
+fn parse_bugs(file_contents: &String) -> Level {
+    let mut bugs:Level = Vec::new();
     for l in file_contents.lines() {
         bugs.push( l.chars().fold(Vec::new(), |mut acc, c| {
             match c {
